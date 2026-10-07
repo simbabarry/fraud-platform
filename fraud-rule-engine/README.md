@@ -1,59 +1,47 @@
-# Fraud Rule Engine Service
+# Fraud Rule Engine
 
-Independent microservice in the [fraud-platform](../README.md) workspace.
+Ingests categorized transaction events, evaluates pluggable fraud rules, persists assessments, and publishes results to Kafka for the [notification service](../fraud-notification-service/README.md).
 
-- Receives **categorized transaction events** via **REST** and **Kafka**
-- Runs every applicable **Strategy-pattern** fraud rule
-- Calculates a **risk score** and assigns **LOW / MEDIUM / HIGH / CRITICAL**
-- Records **which rules were triggered**
-- Prevents **duplicate event processing** (idempotent `externalId`)
-- Exposes a secured REST API to **retrieve / filter assessments**
-- Maintains an **audit trail**
-- Publishes assessments to Kafka for **[fraud-notification-service](../fraud-notification-service/README.md)**
-
-## Stack checklist
-
-| Requirement | Implementation |
-|-------------|----------------|
-| Java 21 + Spring Boot 3 | ✅ |
-| Own PostgreSQL database | ✅ `fraud_db` (compose service `fraud-postgres`) |
-| Kafka (KRaft) | ✅ shared broker in parent `compose.yaml` |
-| Strategy pattern for rules | ✅ `FraudRule` + `@Component` implementations |
-| REST API for flagged assessments | ✅ `/api/v1/assessments`, `/api/v1/fraud-flags` |
-| Flyway migrations | ✅ `db/migration/V1__init_schema.sql` |
-| Spring Security (roles) | ✅ `INGEST` / `ANALYST` / `ADMIN` (HTTP Basic) |
-| Testcontainers / JUnit 5 / Mockito | ✅ unit/IT + PostgreSQL concurrency IT |
-| Docker image | ✅ `Dockerfile` |
-| OpenAPI / Swagger | ✅ `/swagger-ui.html` |
-
-## Quick start
-
-Infrastructure lives in the **parent** workspace:
+Part of the [fraud-platform](../README.md) workspace. Prefer starting the full stack from the parent:
 
 ```bash
-cd C:\fraud-platform
+cd ..
 docker compose up -d --build
 ```
 
-| Service | URL / port |
-|---------|------------|
-| API | http://localhost:8080 |
-| Swagger | http://localhost:8080/swagger-ui.html |
-| Health | http://localhost:8080/actuator/health |
-| Fraud Postgres (host) | `localhost:5433` → `fraud-postgres:5432` |
-| Kafka | `localhost:9092` · `kafka:29092` |
+## Capabilities
 
-### Demo users (HTTP Basic)
+- REST + Kafka ingestion of categorized transactions
+- Strategy-pattern rule engine (`FraudRule` implementations)
+- Risk score → `LOW` / `MEDIUM` / `HIGH` / `CRITICAL`
+- Records every triggered rule as a fraud flag
+- Idempotent processing on `externalId` (safe under concurrency)
+- Secured REST API to search/filter assessments
+- Audit trail for receive / assess / duplicate / failure
+- Publishes `FraudAssessmentResponse` to `fraud.assessments`
 
-| User | Password | Roles |
-|------|----------|-------|
-| `ingest` | `ingest` | INGEST (POST events) |
-| `analyst` | `analyst` | ANALYST (GET assessments) |
-| `admin` | `admin` | ADMIN + all |
+## Stack
 
-### Example ingest
+| Piece | Detail |
+|-------|--------|
+| Java 21 / Spring Boot 3.3 | Application runtime |
+| PostgreSQL (`fraud_db`) | Own database — host `localhost:5433`, container `fraud-postgres:5432` |
+| Kafka (KRaft) | Shared broker from parent Compose |
+| Flyway | Schema in `src/main/resources/db/migration` |
+| Spring Security | HTTP Basic — `INGEST` / `ANALYST` / `ADMIN` |
+| Testcontainers | PostgreSQL concurrency IT |
+| OpenAPI | http://localhost:8080/swagger-ui.html |
+
+## API quick reference
+
+| User | Password | Access |
+|------|----------|--------|
+| `ingest` | `ingest` | `POST /api/v1/transactions/**` |
+| `analyst` | `analyst` | `GET /api/v1/**` |
+| `admin` | `admin` | All roles |
 
 ```bash
+# Ingest
 curl -u ingest:ingest -X POST http://localhost:8080/api/v1/transactions/events \
   -H "Content-Type: application/json" \
   -d '{
@@ -67,55 +55,59 @@ curl -u ingest:ingest -X POST http://localhost:8080/api/v1/transactions/events \
     "merchantCountry": "US",
     "occurredAt": "2026-03-15T10:30:00Z"
   }'
+
+# Search flagged assessments
+curl -u analyst:analyst \
+  "http://localhost:8080/api/v1/assessments?fraudSuspected=true&riskLevel=HIGH"
 ```
 
-### Example search assessments
+## Fraud rules
 
-```bash
-curl -u analyst:analyst "http://localhost:8080/api/v1/assessments?fraudSuspected=true&riskLevel=HIGH"
-```
+| Code | Behaviour |
+|------|-----------|
+| `HIGH_AMOUNT` | Amount exceeds configured threshold |
+| `VELOCITY` | Too many transactions in a short window |
+| `UNUSUAL_COUNTRY` | Merchant country unusual vs customer history |
+| `SPENDING_SPIKE` | Amount spike vs recent average |
+| `DUPLICATE_TRANSACTION` | Near-duplicate charge in a short window |
+| `NIGHT_HIGH_VALUE` | High value during night hours |
+| `RISKY_CATEGORY` | Suspicious merchant category |
+| `ROUND_AMOUNT` | Large round amounts |
 
-## Kafka topics
+Score contributions: LOW=10, MEDIUM=25, HIGH=50, CRITICAL=80. Overall level is derived from total score and max triggered severity.
+
+Default high-risk countries: `KP`, `SY`, `IR` (override with `FRAUD_HIGH_RISK_COUNTRIES`).
+
+## Kafka
 
 | Topic | Direction | Payload |
 |-------|-----------|---------|
-| `transactions.categorized` | In | `TransactionEventRequest` JSON |
-| `fraud.assessments` | Out → notification service | `FraudAssessmentResponse` JSON |
+| `transactions.categorized` | In | `TransactionEventRequest` |
+| `fraud.assessments` | Out | `FraudAssessmentResponse` |
 
-## Fraud rules (Strategy)
+Publishing uses `whenComplete` so async send failures are logged without blocking the assessment transaction. Prefer an outbox for stronger delivery guarantees in production.
 
-| Code | Maps to requirement |
-|------|---------------------|
-| `HIGH_AMOUNT` | Exceeds configurable amount |
-| `VELOCITY` | Several txs in a short period |
-| `UNUSUAL_COUNTRY` | Unusual country |
-| `SPENDING_SPIKE` | Sudden spend vs normal pattern |
-| `DUPLICATE_TRANSACTION` | Duplicate / near-duplicate charge |
-| `NIGHT_HIGH_VALUE` + `RISKY_CATEGORY` | Suspicious time / merchant category |
-| `ROUND_AMOUNT` | Extra heuristic |
+## Idempotency & failure handling
 
-Risk score contributions: LOW=10, MEDIUM=25, HIGH=50, CRITICAL=80.
+- Inserts run in `REQUIRES_NEW`; unique-key conflicts propagate out so Spring rolls back only the short insert transaction
+- Callers catch `DataIntegrityViolationException` and await the winner’s assessment
+- Assessment failures are recorded in a separate `REQUIRES_NEW` transaction (`FAILED` status + audit)
 
 ## Profiles
 
 | Profile | Use |
 |---------|-----|
 | default | In-memory H2, Kafka off |
-| `production` | Postgres `localhost:5433` + Kafka |
-| `docker` | Inside parent compose (`fraud-postgres`) |
+| `production` | Postgres `localhost:5433` + Kafka on localhost |
+| `docker` | Parent Compose (`fraud-postgres`, `kafka:29092`) |
 | `test` | H2, Kafka off, Flyway off |
 
-## Build / test / image
+## Build
 
 ```bash
-# from this module
 mvn clean test
 mvn -DskipTests package
 docker build -t fraud-rule-engine:1.0.0 .
-
-# or from parent aggregator
-cd C:\fraud-platform
-mvn clean test
 ```
 
-PostgreSQL Testcontainers IT (`ConcurrentIdempotencyPostgresTest`) requires Docker.
+`ConcurrentIdempotencyPostgresTest` requires Docker (Testcontainers).

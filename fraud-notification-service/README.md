@@ -1,64 +1,65 @@
 # Fraud Notification Service
 
-Independent microservice in the [fraud-platform](../README.md) workspace.
+Consumes fraud assessment events from Kafka and sends **one email per fraudulent assessment**, aggregating every triggered rule into a single alert.
 
-Consumes `FraudAssessmentResponse` events from Kafka topic `fraud.assessments` and sends **one email per fraudulent assessment**, aggregating every entry in `triggeredRules`.
-
-## Responsibilities
-
-- Ignore assessments where `fraudSuspected == false`
-- Idempotency key: `assessmentId` (statuses `PENDING` / `SENT` / `FAILED`)
-- One email containing **all** triggered rules (not one email per rule)
-- SMTP retries (`@Retryable`) + Kafka retries → DLT `fraud.assessments.dlt`
-- Own database: `notification_db` on `notification-postgres`
-- Alert recipient: `FRAUD_ALERT_RECIPIENT` / `fraud.notification.recipient` (default `fraud-team@example.com`)
-
-## Stack
-
-- Java 21 / Spring Boot 3.3
-- Spring Kafka (consumer + dead-letter recoverer)
-- Spring Mail → Mailpit
-- PostgreSQL + Flyway (`processed_assessments`)
-- Port **8081**
-
-## Configuration
-
-| Property | Default |
-|----------|---------|
-| `fraud.kafka.assessment-topic` | `fraud.assessments` |
-| `fraud.kafka.assessment-dlt-topic` | `fraud.assessments.dlt` |
-| `fraud.notification.recipient` | `fraud-team@example.com` |
-| Datasource (local) | `jdbc:postgresql://localhost:5434/notification_db` |
-
-## Run with the platform
+Part of the [fraud-platform](../README.md) workspace. Prefer starting the full stack from the parent:
 
 ```bash
-cd C:\fraud-platform
+cd ..
 docker compose up -d --build
 ```
 
-| URL | Purpose |
-|-----|---------|
-| http://localhost:8081/actuator/health | Health |
-| http://localhost:8025 | Mailpit UI |
-| `localhost:5434` | Notification Postgres |
+Then open Mailpit at http://localhost:8025.
 
-## Local Maven (infra via parent Compose)
+## Responsibilities
+
+| Concern | Behaviour |
+|---------|-----------|
+| Filtering | Ignore events where `fraudSuspected == false` |
+| Aggregation | One email listing all `triggeredRules` |
+| Idempotency | Keyed by `assessmentId` — statuses `PENDING` → `SENT` / `FAILED` |
+| SMTP retries | Spring `@Retryable` for transient mail failures |
+| Kafka retries | `DefaultErrorHandler` + backoff, then DLT |
+| Dead letter | Topic `fraud.assessments.dlt` |
+| Recipient | Single ops address — no customer emails required |
+
+## Stack
+
+| Piece | Detail |
+|-------|--------|
+| Java 21 / Spring Boot 3.3 | Application runtime |
+| PostgreSQL (`notification_db`) | Own database — host `localhost:5434`, container `notification-postgres:5432` |
+| Spring Kafka | Consumer group `fraud-notification-service` |
+| Spring Mail | SMTP to Mailpit in Compose |
+| Flyway | `processed_assessments` table |
+| Port | `8081` |
+
+## Configuration
+
+| Property / env | Default |
+|----------------|---------|
+| `fraud.kafka.assessment-topic` | `fraud.assessments` |
+| `fraud.kafka.assessment-dlt-topic` | `fraud.assessments.dlt` |
+| `fraud.notification.recipient` / `FRAUD_ALERT_RECIPIENT` | `fraud-team@example.com` |
+| `fraud.notification.alert-from` / `FRAUD_ALERT_FROM` | `fraud-alerts@example.com` |
+| Datasource (local defaults) | `jdbc:postgresql://localhost:5434/notification_db` |
+
+Override the recipient in Compose or the environment:
 
 ```bash
-cd C:\fraud-platform
-docker compose up -d notification-postgres kafka mailpit
-cd fraud-notification-service
-mvn spring-boot:run -Dspring-boot.run.profiles=docker
+FRAUD_ALERT_RECIPIENT=fraud-team@example.com
 ```
 
-## Tests
+## Flow
 
-```bash
-mvn test
-```
+1. Rule engine publishes `FraudAssessmentResponse` to `fraud.assessments`
+2. This service deserializes the event (unknown fields ignored)
+3. Non-fraud events return immediately
+4. If `assessmentId` is already `SENT`, skip
+5. Send one MIME email; mark `SENT` (or `FAILED` and rethrow for Kafka retry)
+6. After Kafka retries are exhausted, the record is published to `fraud.assessments.dlt`
 
-## Example email body
+## Example email
 
 ```text
 Subject: HIGH-risk transaction detected
@@ -70,6 +71,31 @@ Risk score: 60
 Overall risk: HIGH
 
 Triggered rules:
-- HIGH_AMOUNT: Amount exceeds the configured threshold
-- ROUND_AMOUNT: Large round amount detected
+- HIGH_AMOUNT: Amount 9200.0000 USD exceeds threshold 5000
+- ROUND_AMOUNT: Large round amount detected: 9200.0000 USD
+```
+
+## Local development
+
+```bash
+# infrastructure only
+cd ..
+docker compose up -d notification-postgres kafka mailpit
+
+cd fraud-notification-service
+mvn spring-boot:run -Dspring-boot.run.profiles=docker
+```
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:8081/actuator/health | Health |
+| http://localhost:8025 | Mailpit UI |
+| `localhost:5434` | Notification Postgres |
+
+## Build & test
+
+```bash
+mvn clean test
+mvn -DskipTests package
+docker build -t fraud-notification-service:1.0.0 .
 ```
