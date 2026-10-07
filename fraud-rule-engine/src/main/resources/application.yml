@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: fraud-rule-engine
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:fraud;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_DDL_AUTO:update}
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: ${SPRING_FLYWAY_ENABLED:false}
+  h2:
+    console:
+      enabled: false
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: fraud-rule-engine
+      auto-offset-reset: earliest
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+info:
+  app:
+    name: Fraud Rule Engine Service
+    version: 1.0.0
+
+fraud:
+  kafka:
+    enabled: ${FRAUD_KAFKA_ENABLED:false}
+    transaction-topic: transactions.categorized
+    assessment-topic: fraud.assessments
+  rules:
+    high-amount-threshold: ${FRAUD_HIGH_AMOUNT:5000}
+    velocity-window-minutes: ${FRAUD_VELOCITY_WINDOW_MINUTES:60}
+    velocity-max-transactions: ${FRAUD_VELOCITY_MAX_TX:5}
+    night-high-amount-threshold: ${FRAUD_NIGHT_HIGH_AMOUNT:1000}
+    round-amount-min: ${FRAUD_ROUND_AMOUNT_MIN:1000}
+    high-risk-countries: ${FRAUD_HIGH_RISK_COUNTRIES:KP,SY,IR}
+    unusual-country-min-history: ${FRAUD_UNUSUAL_COUNTRY_MIN_HISTORY:3}
+    spending-lookback-days: ${FRAUD_SPENDING_LOOKBACK_DAYS:30}
+    spending-spike-multiplier: ${FRAUD_SPENDING_SPIKE_MULTIPLIER:3.0}
+    spending-spike-min-history: ${FRAUD_SPENDING_SPIKE_MIN_HISTORY:3}
+    duplicate-window-minutes: ${FRAUD_DUPLICATE_WINDOW_MINUTES:5}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.assessment.fraud: INFO

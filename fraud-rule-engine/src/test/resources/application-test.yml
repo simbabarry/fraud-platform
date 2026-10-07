@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:fraud-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+  kafka:
+    bootstrap-servers: localhost:9092
+
+fraud:
+  kafka:
+    enabled: false
+  rules:
+    high-amount-threshold: 5000
+    velocity-window-minutes: 60
+    velocity-max-transactions: 5
+    night-high-amount-threshold: 1000
+    round-amount-min: 1000
+    high-risk-countries: KP,SY,IR
+    unusual-country-min-history: 3
+    spending-lookback-days: 30
+    spending-spike-multiplier: 3.0
+    spending-spike-min-history: 3
+    duplicate-window-minutes: 5
