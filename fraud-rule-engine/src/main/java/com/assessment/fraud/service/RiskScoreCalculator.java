@@ -1,6 +1,6 @@
 package com.assessment.fraud.service;
 
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import com.assessment.fraud.domain.RuleEvaluationResult;
 import java.util.List;
 import org.springframework.stereotype.Component;

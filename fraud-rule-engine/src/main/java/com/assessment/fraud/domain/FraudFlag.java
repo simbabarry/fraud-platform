@@ -1,5 +1,6 @@
 package com.assessment.fraud.domain;
 
+import com.assessment.fraud.domain.enums.RiskLevel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

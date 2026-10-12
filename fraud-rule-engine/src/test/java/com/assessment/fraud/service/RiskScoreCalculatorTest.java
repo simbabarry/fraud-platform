@@ -2,7 +2,7 @@ package com.assessment.fraud.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import com.assessment.fraud.domain.RuleEvaluationResult;
 import java.util.List;
 import org.junit.jupiter.api.Test;

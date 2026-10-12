@@ -1,5 +1,8 @@
 package com.assessment.fraud.domain;
 
+import com.assessment.fraud.domain.enums.EventSource;
+import com.assessment.fraud.domain.enums.TransactionCategory;
+import com.assessment.fraud.domain.enums.TransactionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

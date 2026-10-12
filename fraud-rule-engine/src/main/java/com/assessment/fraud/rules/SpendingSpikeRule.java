@@ -1,6 +1,6 @@
 package com.assessment.fraud.rules;
 
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import com.assessment.fraud.domain.RuleEvaluationResult;
 import com.assessment.fraud.domain.TransactionEvent;
 import java.math.BigDecimal;

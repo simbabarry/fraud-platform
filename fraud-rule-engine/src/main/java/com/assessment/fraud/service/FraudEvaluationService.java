@@ -1,13 +1,13 @@
 package com.assessment.fraud.service;
 
 import com.assessment.fraud.config.FraudRuleProperties;
-import com.assessment.fraud.domain.EventSource;
+import com.assessment.fraud.domain.enums.EventSource;
 import com.assessment.fraud.domain.FraudAssessment;
 import com.assessment.fraud.domain.FraudFlag;
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import com.assessment.fraud.domain.RuleEvaluationResult;
 import com.assessment.fraud.domain.TransactionEvent;
-import com.assessment.fraud.domain.TransactionStatus;
+import com.assessment.fraud.domain.enums.TransactionStatus;
 import com.assessment.fraud.dto.BatchTransactionEventRequest;
 import com.assessment.fraud.dto.FraudAssessmentResponse;
 import com.assessment.fraud.dto.FraudFlagResponse;

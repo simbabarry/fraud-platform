@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.assessment.fraud.config.FraudRuleProperties;
-import com.assessment.fraud.domain.TransactionCategory;
+import com.assessment.fraud.domain.enums.TransactionCategory;
 import com.assessment.fraud.domain.TransactionEvent;
 import com.assessment.fraud.repository.TransactionEventRepository;
 import java.math.BigDecimal;

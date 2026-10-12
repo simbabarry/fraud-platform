@@ -1,13 +1,15 @@
 package com.assessment.fraud.web;
 
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import com.assessment.fraud.dto.FraudFlagResponse;
 import com.assessment.fraud.service.FraudEvaluationService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,12 +30,19 @@ public class FraudFlagController {
     private final FraudEvaluationService fraudEvaluationService;
 
     @GetMapping
-    @Operation(summary = "Search fraud flags with optional filters")
+    @Operation(
+            summary = "Search fraud flags with optional filters",
+            description =
+                    "Pagination uses query params page, size, and sort. "
+                            + "Example: page=0&size=1&sort=createdAt,desc. "
+                            + "In Swagger, set sort to the single string createdAt,desc (not a JSON array).")
     public Page<FraudFlagResponse> search(
             @RequestParam(required = false) String customerId,
             @RequestParam(required = false) String ruleCode,
             @RequestParam(required = false) RiskLevel riskLevel,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ParameterObject
+                    @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+                    @Parameter(description = "page / size / sort=createdAt,desc")
                     Pageable pageable) {
         return fraudEvaluationService.searchFlags(customerId, ruleCode, riskLevel, pageable);
     }

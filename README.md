@@ -92,7 +92,10 @@ Open http://localhost:8025 — you should see one email to `fraud-team@example.c
 
 ```bash
 curl -u analyst:analyst "http://localhost:8080/api/v1/assessments?fraudSuspected=true"
+curl -u analyst:analyst "http://localhost:8080/api/v1/fraud-flags?page=0&size=1&sort=createdAt,desc"
 ```
+
+Paged list endpoints take query params (`page`, `size`, `sort=createdAt,desc`) — see [rule engine README](fraud-rule-engine/README.md#pagination-swagger--query-params). In Swagger, `sort` must be the single string `createdAt,desc`, not a JSON array.
 
 ## Build & test
 

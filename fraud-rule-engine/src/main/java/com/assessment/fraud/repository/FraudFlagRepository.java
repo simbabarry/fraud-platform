@@ -1,7 +1,7 @@
 package com.assessment.fraud.repository;
 
 import com.assessment.fraud.domain.FraudFlag;
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

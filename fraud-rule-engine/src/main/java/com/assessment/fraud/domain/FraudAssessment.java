@@ -1,5 +1,7 @@
 package com.assessment.fraud.domain;
 
+import com.assessment.fraud.domain.enums.EventSource;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

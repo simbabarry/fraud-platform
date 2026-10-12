@@ -1,4 +1,4 @@
-package com.assessment.fraud.domain;
+package com.assessment.fraud.domain.enums;
 
 public enum TransactionCategory {
     GROCERIES,

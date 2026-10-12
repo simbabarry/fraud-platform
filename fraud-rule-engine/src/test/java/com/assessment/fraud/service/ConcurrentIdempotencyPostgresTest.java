@@ -2,7 +2,7 @@ package com.assessment.fraud.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.assessment.fraud.domain.TransactionCategory;
+import com.assessment.fraud.domain.enums.TransactionCategory;
 import com.assessment.fraud.dto.FraudAssessmentResponse;
 import com.assessment.fraud.dto.TransactionEventRequest;
 import com.assessment.fraud.repository.FraudAssessmentRepository;

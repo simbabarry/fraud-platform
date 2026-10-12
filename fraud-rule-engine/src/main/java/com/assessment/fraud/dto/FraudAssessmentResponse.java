@@ -1,10 +1,10 @@
 package com.assessment.fraud.dto;
 
-import com.assessment.fraud.domain.EventSource;
+import com.assessment.fraud.domain.enums.EventSource;
 import com.assessment.fraud.domain.FraudAssessment;
-import com.assessment.fraud.domain.RiskLevel;
-import com.assessment.fraud.domain.TransactionCategory;
-import com.assessment.fraud.domain.TransactionStatus;
+import com.assessment.fraud.domain.enums.RiskLevel;
+import com.assessment.fraud.domain.enums.TransactionCategory;
+import com.assessment.fraud.domain.enums.TransactionStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

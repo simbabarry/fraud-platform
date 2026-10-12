@@ -1,5 +1,7 @@
 package com.assessment.fraud.domain;
 
+import com.assessment.fraud.domain.enums.RiskLevel;
+
 /**
  * Immutable outcome of a single fraud rule evaluation.
  */

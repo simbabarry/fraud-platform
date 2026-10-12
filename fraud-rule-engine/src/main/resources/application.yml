@@ -65,6 +65,7 @@ springdoc:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+  default-flat-param-object: true
 
 logging:
   level:

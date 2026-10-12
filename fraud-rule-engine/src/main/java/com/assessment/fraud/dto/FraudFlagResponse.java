@@ -1,7 +1,7 @@
 package com.assessment.fraud.dto;
 
 import com.assessment.fraud.domain.FraudFlag;
-import com.assessment.fraud.domain.RiskLevel;
+import com.assessment.fraud.domain.enums.RiskLevel;
 import java.time.Instant;
 import java.util.UUID;
 

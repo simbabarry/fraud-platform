@@ -1,6 +1,6 @@
 package com.assessment.fraud.dto;
 
-import com.assessment.fraud.domain.TransactionCategory;
+import com.assessment.fraud.domain.enums.TransactionCategory;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

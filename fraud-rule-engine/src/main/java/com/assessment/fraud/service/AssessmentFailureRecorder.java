@@ -1,6 +1,6 @@
 package com.assessment.fraud.service;
 
-import com.assessment.fraud.domain.TransactionStatus;
+import com.assessment.fraud.domain.enums.TransactionStatus;
 import com.assessment.fraud.repository.TransactionEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

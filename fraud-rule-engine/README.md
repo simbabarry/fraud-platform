@@ -59,6 +59,36 @@ curl -u ingest:ingest -X POST http://localhost:8080/api/v1/transactions/events \
 # Search flagged assessments
 curl -u analyst:analyst \
   "http://localhost:8080/api/v1/assessments?fraudSuspected=true&riskLevel=HIGH"
+
+# Search fraud flags (paged)
+curl -u analyst:analyst \
+  "http://localhost:8080/api/v1/fraud-flags?page=0&size=1&sort=createdAt,desc"
+```
+
+### Pagination (Swagger / query params)
+
+List endpoints (`/api/v1/assessments`, `/api/v1/fraud-flags`) expose Spring Data `Pageable` as **flat query parameters** (`page`, `size`, `sort`) — not a nested `pageable` JSON object and not a request body. In Swagger, fill:
+
+```json
+{
+  "page": 0,
+  "size": 1,
+  "sort": "createdAt,desc"
+}
+```
+
+| Field | Meaning | Notes |
+|-------|---------|--------|
+| `page` | Zero-based page index | Default `0` |
+| `size` | Page size | Default `20` |
+| `sort` | `property,direction` | One string, e.g. `createdAt,desc`. Default when omitted: `createdAt,desc` |
+
+Do **not** use a JSON array for `sort` (e.g. `["createdAt,desc"]` or `["createdAt","desc"]`), and do not leave Swagger’s placeholder value `string`. Those become invalid property names and the API returns an error.
+
+Equivalent query string:
+
+```text
+?page=0&size=1&sort=createdAt,desc
 ```
 
 ## Fraud rules
