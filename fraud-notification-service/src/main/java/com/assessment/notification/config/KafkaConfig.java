@@ -4,7 +4,9 @@ import com.assessment.notification.dto.FraudAssessmentEvent;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,13 +74,17 @@ public class KafkaConfig {
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(assessmentConsumerFactory());
 
-        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
-                dltKafkaTemplate,
-                (record, ex) -> new org.apache.kafka.common.TopicPartition(dltTopic, record.partition()));
+        DeadLetterPublishingRecoverer recoverer =
+                new DeadLetterPublishingRecoverer(dltKafkaTemplate, this::dltDestination);
 
         // 3 retries with 1s backoff, then publish to fraud.assessments.dlt
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recoverer, new FixedBackOff(1000L, 3L));
         factory.setCommonErrorHandler(errorHandler);
         return factory;
+    }
+
+    /** Maps a failed record onto the configured dead-letter topic, preserving partition. */
+    TopicPartition dltDestination(ConsumerRecord<?, ?> record, Exception ex) {
+        return new TopicPartition(dltTopic, record.partition());
     }
 }

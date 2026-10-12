@@ -1,0 +1,46 @@
+Transactions
+
+1. /api/v1/transactions/events
+-- Happy path
+
+{
+  "externalId": "121233233233444",
+  "customerId": "cust-23",
+  "accountId": "100200300",
+  "amount": 100.00,
+  "currency": "BSZ",
+  "category": "GROCERIES",
+  "merchantName": "FOURWAYS MARKET",
+  "merchantCountry": "ZW",
+  "occurredAt": "2026-10-12T08:05:13.676Z"
+}
+
+
+2.
+
+{
+  "events": [
+ {
+  "externalId": "121233233233433",
+  "customerId": "cust-23",
+  "accountId": "100200300",
+  "amount": 230.00,
+  "currency": "BSZ",
+  "category": "GROCERIES",
+  "merchantName": "FOURWAYS MARKET",
+  "merchantCountry": "ZW",
+  "occurredAt": "2026-10-12T08:05:13.676Z"
+},
+{
+  "externalId": "121233233233200",
+  "customerId": "cust-23",
+  "accountId": "100200300",
+  "amount": 130.00,
+  "currency": "BSZ",
+  "category": "GROCERIES",
+  "merchantName": "FOURWAYS MARKET",
+  "merchantCountry": "ZW",
+  "occurredAt": "2026-10-12T08:05:13.676Z"
+}
+  ]
+}

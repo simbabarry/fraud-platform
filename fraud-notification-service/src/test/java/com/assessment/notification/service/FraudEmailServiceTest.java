@@ -43,6 +43,27 @@ class FraudEmailServiceTest {
     }
 
     @Test
+    void subjectFallsBackToUnknownWhenRiskLevelMissing() {
+        FraudAssessmentEvent event = new FraudAssessmentEvent(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "tx-1001",
+                "cust-42",
+                new BigDecimal("10.00"),
+                "USD",
+                "GROCERIES",
+                Instant.now(),
+                0,
+                null,
+                true,
+                0,
+                List.of(),
+                Instant.now());
+
+        assertThat(emailService.buildSubject(event)).isEqualTo("UNKNOWN-risk transaction detected");
+    }
+
+    @Test
     void bodyAggregatesAllTriggeredRules() {
         String body = emailService.buildBody(sample(true));
         assertThat(body).contains("Transaction: tx-1001");
@@ -53,6 +74,54 @@ class FraudEmailServiceTest {
         assertThat(body).contains("HIGH_AMOUNT: Amount exceeds the configured threshold");
         assertThat(body).contains("UNUSUAL_COUNTRY: Merchant country is unusual for the customer");
         assertThat(body).contains("SPENDING_SPIKE: Amount exceeds the customer's historical average");
+    }
+
+    @Test
+    void bodyHandlesMissingOptionalFields() {
+        FraudAssessmentEvent event = new FraudAssessmentEvent(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                null,
+                "   ",
+                null,
+                null,
+                "OTHER",
+                Instant.now(),
+                0,
+                null,
+                true,
+                0,
+                null,
+                Instant.now());
+
+        String body = emailService.buildBody(event);
+
+        assertThat(body).contains("Transaction: -");
+        assertThat(body).contains("Customer: -");
+        assertThat(body).contains("Amount: - -");
+        assertThat(body).contains("Overall risk: -");
+        assertThat(body).contains("- (none listed)");
+    }
+
+    @Test
+    void bodyUsesDashForBlankRuleFields() {
+        FraudAssessmentEvent event = new FraudAssessmentEvent(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "tx-2",
+                "cust-2",
+                new BigDecimal("1.5"),
+                "ZAR",
+                "OTHER",
+                Instant.now(),
+                10,
+                "LOW",
+                true,
+                1,
+                List.of(new TriggeredRuleEvent(null, "n", "LOW", "  ", 10)),
+                Instant.now());
+
+        assertThat(emailService.buildBody(event)).contains("- -: -");
     }
 
     @Test
